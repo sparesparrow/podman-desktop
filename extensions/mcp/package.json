@@ -1,13 +1,14 @@
 {
   "name": "@podman-desktop/mcp",
   "version": "0.1.0",
-  "private": true,
   "displayName": "Model Context Protocol Client",
   "description": "MCP client extension for Podman Desktop",
   "publisher": "podman-desktop",
   "license": "Apache-2.0",
+  "icon": "icon.png",
   "engines": {
-    "node": ">=14.0.0"
+    "node": ">=20.9.0",
+    "podman-desktop": "^0.0.1"
   },
   "categories": [
     "Other"
@@ -15,33 +16,33 @@
   "main": "./dist/extension.js",
   "source": "./src/extension.ts",
   "scripts": {
-    "build": "rollup -c rollup.config.js",
-    "watch": "rollup -c rollup.config.js -w",
-    "test": "vitest run --coverage",
-    "test:watch": "vitest watch",
+    "build": "vite build && node ./scripts/build.js",
+    "watch": "vite build --watch",
+    "test": "vitest run --coverage --passWithNoTests",
+    "test:watch": "vitest watch --coverage --passWithNoTests",
     "lint:check": "eslint --ext .ts,.tsx .",
     "lint:fix": "eslint --fix --ext .ts,.tsx .",
     "prettier:check": "prettier --check \"**/*.{js,ts,tsx,json,yml,yaml,css,md}\"",
-    "prettier:format": "prettier --write \"**/*.{js,ts,tsx,json,yml,yaml,css,md}\""
+    "prettier:format": "prettier --write \"**/*.{js,ts,tsx,json,yml,yaml,css,md}\"",
+    "test:server": "node ./src/test/start-test-server.js"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^0.1.0",
-    "@podman-desktop/api": "^1.0.0",
-    "vitest": "^0.34.0"
+    "@modelcontextprotocol/sdk": "latest",
+    "@podman-desktop/api": "workspace:*"
   },
   "devDependencies": {
     "@podman-desktop/ui-svelte": "workspace:*",
-    "@types/node": "^18.0.0",
-    "@typescript-eslint/eslint-plugin": "^5.0.0",
-    "@typescript-eslint/parser": "^5.0.0",
-    "eslint": "^8.0.0",
-    "prettier": "^2.0.0",
-    "rollup": "^2.0.0",
-    "rollup-plugin-svelte": "^7.0.0",
-    "rollup-plugin-typescript2": "^0.31.0",
-    "svelte": "^3.0.0",
-    "typescript": "^4.0.0",
-    "@types/vitest": "^0.34.0"
+    "@types/node": "latest",
+    "@typescript-eslint/eslint-plugin": "latest",
+    "@typescript-eslint/parser": "latest",
+    "eslint": "latest",
+    "prettier": "latest",
+    "vite": "latest",
+    "vitest": "latest",
+    "svelte": "latest",
+    "typescript": "latest",
+    "adm-zip": "latest",
+    "mkdirp": "latest"
   },
   "extensionDependencies": [],
   "contributes": {
@@ -82,5 +83,6 @@
     "packages": [
       "../../packages/*"
     ]
-  }
-} 
+  },
+  "packageManager": "pnpm@9.14.1"
+}

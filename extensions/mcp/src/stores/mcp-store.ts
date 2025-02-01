@@ -1,4 +1,4 @@
-import { writable } from 'svelte/store';
+import { writable, get } from 'svelte/store';
 import type { McpState } from '../types/mcp-types';
 import type { Client } from '@modelcontextprotocol/sdk/client/index.js';
 
@@ -18,9 +18,8 @@ export class McpStore {
   }
 
   getClient(id: string): Client | undefined {
-    let client: Client | undefined;
-    this.clients.subscribe(map => client = map.get(id))();
-    return client;
+    const clientMap = get(this.clients);
+    return clientMap.get(id);
   }
 
   setClient(id: string, client: Client) {

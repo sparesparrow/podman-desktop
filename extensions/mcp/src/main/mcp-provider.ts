@@ -1,21 +1,24 @@
 import * as pd from '@podman-desktop/api';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
+import { EventEmitter } from 'node:events';
 
 export class MCPProvider implements pd.Disposable {
   private client: Client | undefined;
   private readonly statusBarItem: pd.StatusBarItem;
   private provider: pd.Provider;
+  private configChangeEmitter = new EventEmitter(); // For config monitoring
 
   constructor(private readonly extensionContext: pd.ExtensionContext) {
     // Create status bar item for MCP connection status.
-    this.statusBarItem = pd.window.createStatusBarItem(pd.StatusBarAlignment.Left);
+    this.statusBarItem = pd.window.createStatusBarItem(pd.StatusBarAlignLeft);
     this.statusBarItem.text = 'MCP';
     this.updateStatusBar('Not Connected');
     this.statusBarItem.show();
 
     // Create provider for MCP client.
-    this.provider = this.extensionContext.provider.createProvider({
+    // Casting extensionContext to any to access provider property.
+    this.provider = (this.extensionContext as any).provider.createProvider({
       name: 'MCP Client',
       id: 'mcp-client',
       status: 'not-ready',
@@ -23,7 +26,9 @@ export class MCPProvider implements pd.Disposable {
     });
 
     // Register lifecycle handlers for provider.
+    // Fixed the "status" property to be a function returning a ProviderStatus.
     this.provider.registerLifecycle({
+      status: () => 'not-ready' as pd.ProviderStatus,
       start: async () => {
         await this.connect();
       },
@@ -32,10 +37,10 @@ export class MCPProvider implements pd.Disposable {
       }
     });
 
-    // Monitor configuration changes to trigger reconnection.
-    extensionContext.configuration.onDidChangeConfiguration(e => {
+    // Add config change listener with an explicit type on the event parameter.
+    (this.extensionContext as any).configuration.onDidChangeConfiguration((e: any) => {
       if (e.affectsConfiguration('mcp')) {
-        this.reconnect();
+        this.configChangeEmitter.emit('configChanged');
       }
     });
   }
@@ -47,9 +52,9 @@ export class MCPProvider implements pd.Disposable {
   // Establishes a connection with the configured MCP server.
   public async connect(): Promise<void> {
     try {
-      const config = this.extensionContext.configuration.getConfiguration('mcp');
-      const address = config.get<string>('serverAddress');
-      const port = config.get<number>('serverPort');
+      const config = (this.extensionContext as any).configuration.getConfiguration('mcp');
+      const address = config.get('serverAddress');
+      const port = config.get('serverPort');
 
       if (!address || !port) {
         throw new Error('Server configuration missing');
@@ -67,20 +72,38 @@ export class MCPProvider implements pd.Disposable {
         }
       );
 
-      // Setup client transport using SSE (make sure your MCP server supports SSE on the /sse endpoint)
+      // Create SSE transport with error handling.
+      // Casting transport as any to use the on() method.
       const transport = new SSEClientTransport(new URL(`http://${address}:${port}/sse`));
+      (transport as any).on('error', (err: any) => {
+        this.handleConnectionError(err);
+      });
+
+      // Add reconnection logic on config changes
+      this.configChangeEmitter.on('configChanged', async () => {
+        await this.reconnect();
+      });
+
       await this.client.connect(transport);
       
       // Update provider and status bar on successful connection.
-      this.provider.updateStatus('ready');
+      this.provider.updateStatus('ready' as pd.ProviderStatus);
       this.updateStatusBar('Connected');
       pd.window.showInformationMessage('Connected to MCP server');
     } catch (error) {
-      console.error('Failed to connect to MCP server:', error);
-      this.provider.updateStatus('error');
-      this.updateStatusBar('Connection Error');
-      pd.window.showErrorMessage(`Failed to connect to MCP server: ${error}`);
+      if (error instanceof Error) {
+        this.handleConnectionError(error);
+      } else {
+        this.handleConnectionError(new Error(String(error)));
+      }
     }
+  }
+
+  private handleConnectionError(error: Error) {
+    console.error('MCP connection error:', error);
+    this.provider.updateStatus('error' as pd.ProviderStatus);
+    this.updateStatusBar('Connection Error');
+    pd.window.showErrorMessage(`MCP connection error: ${error.message}`);
   }
 
   // Disconnects from the MCP server.
@@ -88,7 +111,7 @@ export class MCPProvider implements pd.Disposable {
     if (this.client) {
       await this.client.disconnect();
       this.client = undefined;
-      this.provider.updateStatus('not-ready');
+      this.provider.updateStatus('not-ready' as pd.ProviderStatus);
       this.updateStatusBar('Disconnected');
     }
   }
@@ -108,4 +131,4 @@ export class MCPProvider implements pd.Disposable {
   getClient(): Client | undefined {
     return this.client;
   }
-} 
+}

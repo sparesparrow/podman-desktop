@@ -20,7 +20,16 @@ vi.mock('@podman-desktop/api', () => ({
 
 describe('MCPProvider', () => {
   let provider: MCPProvider;
-  let extensionContext: pd.ExtensionContext;
+  // Extend the pd.ExtensionContext type to include our custom properties for testing.
+  let extensionContext: pd.ExtensionContext & {
+    provider: {
+      createProvider: Function;
+    };
+    configuration: {
+      getConfiguration: Function;
+      onDidChangeConfiguration: Function;
+    };
+  };
 
   beforeEach(() => {
     extensionContext = {
@@ -36,9 +45,17 @@ describe('MCPProvider', () => {
           get: vi.fn()
         }),
         onDidChangeConfiguration: vi.fn()
+      },
+      // Adding dummy properties to satisfy the pd.ExtensionContext interface
+      storagePath: '',
+      extensionUri: { fsPath: '' } as any,
+      secrets: {
+        get: vi.fn(),
+        store: vi.fn(),
+        delete: vi.fn(),
+        onDidChange: vi.fn()
       }
-    } as unknown as pd.ExtensionContext;
-
+    };
     provider = new MCPProvider(extensionContext);
   });
 
@@ -70,4 +87,4 @@ describe('MCPProvider', () => {
       expect.stringContaining('Failed to connect to MCP server')
     );
   });
-}); 
+});
