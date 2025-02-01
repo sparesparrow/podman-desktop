@@ -1,0 +1,86 @@
+{
+  "name": "@podman-desktop/mcp",
+  "version": "0.1.0",
+  "private": true,
+  "displayName": "Model Context Protocol Client",
+  "description": "MCP client extension for Podman Desktop",
+  "publisher": "podman-desktop",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "main": "./dist/extension.js",
+  "source": "./src/extension.ts",
+  "scripts": {
+    "build": "rollup -c rollup.config.js",
+    "watch": "rollup -c rollup.config.js -w",
+    "test": "vitest run --coverage",
+    "test:watch": "vitest watch",
+    "lint:check": "eslint --ext .ts,.tsx .",
+    "lint:fix": "eslint --fix --ext .ts,.tsx .",
+    "prettier:check": "prettier --check \"**/*.{js,ts,tsx,json,yml,yaml,css,md}\"",
+    "prettier:format": "prettier --write \"**/*.{js,ts,tsx,json,yml,yaml,css,md}\""
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^0.1.0",
+    "@podman-desktop/api": "^1.0.0",
+    "vitest": "^0.34.0"
+  },
+  "devDependencies": {
+    "@podman-desktop/ui-svelte": "workspace:*",
+    "@types/node": "^18.0.0",
+    "@typescript-eslint/eslint-plugin": "^5.0.0",
+    "@typescript-eslint/parser": "^5.0.0",
+    "eslint": "^8.0.0",
+    "prettier": "^2.0.0",
+    "rollup": "^2.0.0",
+    "rollup-plugin-svelte": "^7.0.0",
+    "rollup-plugin-typescript2": "^0.31.0",
+    "svelte": "^3.0.0",
+    "typescript": "^4.0.0",
+    "@types/vitest": "^0.34.0"
+  },
+  "extensionDependencies": [],
+  "contributes": {
+    "configuration": {
+      "title": "MCP Client",
+      "properties": {
+        "mcp.serverAddress": {
+          "type": "string",
+          "default": "localhost",
+          "description": "MCP server address"
+        },
+        "mcp.serverPort": {
+          "type": "number",
+          "default": 3001,
+          "description": "MCP server port"
+        }
+      }
+    },
+    "views": {
+      "dashboard": [
+        {
+          "id": "mcp-client",
+          "title": "MCP Client",
+          "icon": "$(tools)"
+        }
+      ]
+    },
+    "menus": {
+      "dashboard/image": [
+        {
+          "command": "mcp-client.viewResources",
+          "title": "View MCP Resources"
+        }
+      ]
+    }
+  },
+  "workspaces": {
+    "packages": [
+      "../../packages/*"
+    ]
+  }
+} 
