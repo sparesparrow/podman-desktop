@@ -1,0 +1,341 @@
+{
+  "projectContext": "MCP Server Manager Extension for Podman Desktop",
+  "overview": "This project implements an MCP Server Manager as a Podman Desktop extension. It serves as a central coordination point for MCP servers by handling their lifecycle management and communication within containers. Based on a JSON configuration, each defined MCP server is instantiated in its own container, and the UI displays an icon for each. Users can also add new servers dynamically via the chat interface. The design adheres to SOLID and KISS principles, employs dependency injection and MVC patterns, and ensures that business logic is separated from UI components.",
+  "codingStandards": {
+    "general": [
+      "Follow SOLID principles – every module or class must have a single responsibility.",
+      "Keep the design simple (KISS) and modular.",
+      "Use camelCase for variables/functions and PascalCase for classes/components.",
+      "Document all public methods and interfaces with JSDoc.",
+      "Apply dependency injection to manage service dependencies.",
+      "Adopt MVC patterns to separate business logic from presentation layers."
+    ],
+    "errorHandling": [
+      "Wrap asynchronous operations in try/catch blocks.",
+      "Log errors with context using a consistent logging format.",
+      "Provide user-friendly error messages and global error boundaries in the UI."
+    ]
+  },
+  "preferredLibraries": [
+    {
+      "name": "@podman-desktop/api",
+      "purpose": "Provides the extension API to integrate with Podman Desktop without modifying core code."
+    },
+    {
+      "name": "@modelcontextprotocol/sdk",
+      "purpose": "Supplies the generic MCP client functionality for communication with MCP servers and related transport types."
+    },
+    {
+      "name": "@anthropic-ai/sdk",
+      "purpose": "Enables LLM integration; this is encapsulated in a dedicated service (AnthropicClient.ts) to allow switching providers later."
+    },
+    {
+      "name": "Vite",
+      "purpose": "Serves as the build tool and bundler for fast, live development."
+    },
+    {
+      "name": "Vitest",
+      "purpose": "Testing framework for unit and integration tests."
+    },
+    {
+      "name": "TypeScript",
+      "purpose": "Ensures type safety and supports modern development practices."
+    },
+    {
+      "name": "Svelte",
+      "purpose": "Used for building reactive and efficient UI components."
+    }
+  ],
+  "dependencyManagement": {
+    "strategy": "Use workspace references (e.g., \"workspace:*\") for shared dependencies. When adding new dependencies, verify compatibility with the core Podman Desktop codebase. Manage conflicts using pnpm.overrides (defined in the root package.json). Regularly update dependencies and coordinate breaking changes with core maintainers.",
+    "example": {
+      "pnpmOverrides": {
+        "rollup": "^4.22.5",
+        "@podman-desktop/api": "workspace:*",
+        "@modelcontextprotocol/sdk": "^1.0.0",
+        "@anthropic-ai/sdk": "^1.0.0"
+      }
+    },
+    "versionSearch": "Use the built-in web search tool (e.g., @Web: 'latest version of @modelcontextprotocol/sdk') to verify correct versions."
+  },
+  "fileStructure": {
+    "description": "The following file structure separates business logic (services) from UI components and utilities, ensuring a clean MVC separation:",
+    "structure": {
+      "extensions/mcp/": {
+        "src/": {
+          "extension.ts": "Activation module that registers commands, loads the JSON configuration, and initializes MCP servers and client logic.",
+          "services/": {
+            "ConfigurationManager.ts": "Manages configuration loading, updates, and secure API key retrieval.",
+            "McpClient.ts": "Contains generic MCP client logic using @modelcontextprotocol/sdk (implements IMcpClient).",
+            "AnthropicClient.ts": "Implements the ILLMProvider interface for Anthropic integration; designed to be switchable with another LLM provider.",
+            "ConfigurationStore.ts": "Handles loading and saving of the JSON configuration file that defines MCP server settings."
+          },
+          "components/": {
+            "ChatInterface.svelte": "UI component for the chat interface. It displays message history, an input field for user commands, and icons for each MCP server."
+          },
+          "utils/": {
+            "apiHelpers.ts": "Utility functions for API requests and common helper operations."
+          }
+        },
+        "docs/": {
+          "README.md": "Comprehensive documentation covering installation, usage, and developer guidelines (@Docs).",
+          "NOTEPAD": "Internal reference for design decisions, troubleshooting logs, and refactoring notes (@Notepad)."
+        },
+        "package.json": "Defines extension metadata, dependency definitions, and build/test scripts."
+      }
+    }
+  },
+  "packageJsonExample": {
+    "description": "Example content for extensions/mcp/package.json:",
+    "content": "{\n  \"name\": \"mcp-extension\",\n  \"version\": \"1.0.0\",\n  \"description\": \"MCP client extension for Podman Desktop\",\n  \"main\": \"./dist/extension.js\",\n  \"engines\": { \"podman-desktop\": \"^0.x.x\" },\n  \"scripts\": {\n    \"build\": \"vite build\",\n    \"watch\": \"vite build --watch\",\n    \"test\": \"vitest\"\n  },\n  \"dependencies\": {\n    \"@podman-desktop/api\": \"workspace:*\",\n    \"@modelcontextprotocol/sdk\": \"^1.0.0\",\n    \"@anthropic-ai/sdk\": \"^1.0.0\"\n  },\n  \"devDependencies\": {\n    \"vite\": \"^6.0.11\",\n    \"vitest\": \"^2.1.6\",\n    \"typescript\": \"5.6.3\"\n  }\n}"
+  },
+  "securityGuidelines": {
+    "apiKeyManagement": {
+      "storage": "Use Electron's secure storage API (see @File secureStorage.ts) to store API keys and sensitive configuration securely.",
+      "retrieval": "Implement encrypted retrieval methods with robust error handling.",
+      "rotation": "Support periodic API key rotation and validation."
+    },
+    "communication": {
+      "protocols": "Use secure WebSocket connections for real-time communication with MCP servers.",
+      "encryption": "Implement end-to-end encryption for all sensitive data exchanges."
+    },
+    "authentication": {
+      "patterns": "Apply token-based authentication where applicable and verify user authorization for sensitive operations."
+    }
+  },
+  "performanceStandards": {
+    "uiOptimization": {
+      "lazyLoading": "Implement dynamic imports for heavy components (e.g., lazy-load ChatInterface.svelte if not immediately visible).",
+      "stateManagement": "Use efficient state update patterns with Svelte stores to minimize unnecessary re-renders."
+    },
+    "resourceManagement": {
+      "llmInteractions": "Implement request throttling and caching mechanisms for LLM interactions to optimize resource usage.",
+      "memoryUsage": "Continuously monitor and profile memory consumption to identify and mitigate bottlenecks."
+    }
+  },
+  "mcpCoreArchitecture": {
+    "description": "The MCP extension consists of two main layers:",
+    "layers": [
+      {
+        "name": "Generic MCP Client Layer",
+        "details": "Implements the core logic for connecting to and processing messages from MCP servers using @modelcontextprotocol/sdk. This layer is designed to be reusable and independent of any LLM provider."
+      },
+      {
+        "name": "LLM Integration Layer",
+        "details": "Encapsulated in AnthropicClient.ts, this layer implements the ILLMProvider interface. It abstracts LLM-specific logic to allow the integration to be switched with another provider if needed."
+      }
+    ],
+    "serverInstantiation": {
+      "description": "On initialization, the extension loads a JSON configuration (e.g., the 'mcpServers' object) and instantiates each MCP server in its own container. For instance, if the configuration defines 'memory', 'filesystem', and 'github' servers, three containers will be created and corresponding icons will be shown in the UI. Users can also add new servers dynamically through the chat interface."
+    }
+  },
+  "mcpServerManagerDesign": {
+    "description": "This section outlines the design for the MCP Server Manager, which coordinates the lifecycle of MCP servers.",
+    "interfaces": {
+      "McpServerManager": {
+        "description": "Extends the MCP Client interface and adds server management methods.",
+        "methods": [
+          "connect(transport: Transport): Promise<void>",
+          "request<T>(request: Request, schema: T): Promise<T>",
+          "notification(notification: Notification): Promise<void>",
+          "startServer(name: string, config: ServerConfig): Promise<void>",
+          "stopServer(name: string): Promise<void>",
+          "listServers(): Promise<ServerInfo[]>",
+          "getServerStatus(name: string): Promise<ServerStatus>"
+        ]
+      },
+      "ServerConfig": {
+        "description": "Defines configuration for an MCP server.",
+        "fields": [
+          "command: string",
+          "args: string[]",
+          "env?: Record<string, string>",
+          "workingDir?: string",
+          "resources?: ResourceConfig[]",
+          "tools?: ToolConfig[]"
+        ]
+      },
+      "ServerInfo": {
+        "description": "Provides information about an MCP server.",
+        "fields": [
+          "name: string",
+          "status: ServerStatus",
+          "capabilities: ServerCapabilities",
+          "version: string"
+        ]
+      },
+      "ServerStatus": {
+        "description": "Enumeration for server statuses.",
+        "values": [
+          "STARTING", "RUNNING", "STOPPING", "STOPPED", "ERROR"
+        ]
+      },
+      "ContainerManager": {
+        "description": "Manages container lifecycle operations for MCP servers.",
+        "methods": [
+          "createContainer(name: string, config: ContainerConfig): Promise<Container>",
+          "removeContainer(name: string): Promise<void>",
+          "listContainers(): Promise<Container[]>"
+        ]
+      },
+      "Container": {
+        "description": "Represents a container running an MCP server.",
+        "methods": [
+          "start(): Promise<void>",
+          "stop(): Promise<void>",
+          "exec(command: string): Promise<ExecResult>"
+        ]
+      }
+    },
+    "sdkTypes": {
+      "providedTypes": [
+        "Client, Transport, Request, Notification, ServerCapabilities, ResourceTemplate, Tool, PromptTemplate (from @modelcontextprotocol/sdk)",
+        "StdioClientTransport, SSEClientTransport (from @modelcontextprotocol/sdk/transports)"
+      ]
+    },
+    "implementationClasses": {
+      "PodmanDesktopMcpManager": {
+        "description": "Implements the McpServerManager interface. Coordinates server instantiation, container management, and communication.",
+        "dependencies": [
+          "Transport instance", "ContainerManager", "ConfigurationStore"
+        ]
+      },
+      "ConfigurationStore": {
+        "description": "Loads and saves the JSON configuration that defines MCP server settings."
+      }
+    },
+    "containerLifecycle": "Each MCP server runs in its own container. The lifecycle includes container creation, server initialization (starting the process, querying capabilities, establishing connections), runtime operation (handling requests and notifications), and graceful shutdown (stopping operations and cleaning up resources).",
+    "errorHandling": {
+      "McpError": {
+        "description": "Custom error class for MCP-related errors.",
+        "fields": ["code: ErrorCode", "message: string", "details?: unknown"]
+      },
+      "ErrorCode": {
+        "description": "Enumeration of error codes such as SERVER_START_FAILED, SERVER_NOT_FOUND, CONTAINER_ERROR, COMMUNICATION_ERROR, and INVALID_CONFIGURATION."
+      }
+    },
+    "systemArchitectureDiagram": "Refer to @Docs for a Mermaid flowchart detailing initialization, runtime operations, notifications, tool execution, and container management."
+  },
+  "interfaces": {
+    "IMcpConfig": {
+      "description": "Defines the structure for MCP server configuration data.",
+      "methods": [
+        "getConfig(): IMcpConfig – Returns the current configuration.",
+        "updateServerConfig(serverName: string, newConfig: { command: string; args: string[] }): void – Updates and persists configuration for a server."
+      ]
+    },
+    "IMcpClient": {
+      "description": "Interface for generic MCP client logic.",
+      "methods": [
+        "processMessage(message: string): Promise<string> – Processes a message and returns a response.",
+        "sendRequest(request: any): Promise<any> – Sends a request to an MCP server."
+      ]
+    },
+    "ILLMProvider": {
+      "description": "Interface that abstracts LLM provider functionality for switchable integration.",
+      "methods": [
+        "sendRequest(payload: any): Promise<any> – Sends a request to the LLM provider.",
+        "getResponse(): Promise<any> – Retrieves a response from the LLM provider."
+      ]
+    },
+    "IMcpHostEnvProvider": {
+      "description": "Provides host environment details required by the MCP extension.",
+      "methods": [
+        "getEnvironmentInfo(): any – Returns host environment details."
+      ]
+    },
+    "IMcpServer": {
+      "description": "Represents an MCP server instance.",
+      "methods": [
+        "connect(options?: object): Promise<void> – Establishes connection to the server."
+      ]
+    },
+    "IMcpServerFactory": {
+      "description": "Creates MCP server instances based on configuration.",
+      "methods": [
+        "createServer(config: any): IMcpServer – Returns an MCP server instance."
+      ]
+    },
+    "IMcpTransport": {
+      "description": "Abstracts the transport mechanism for the MCP client.",
+      "methods": [
+        "send(data: any): Promise<any> – Sends data over the transport.",
+        "receive(): Promise<any> – Receives data from the transport."
+      ]
+    },
+    "IMcpMessage": {
+      "description": "Represents an MCP message.",
+      "methods": []
+    },
+    "IMcpDao": {
+      "description": "Handles data access for MCP messages or configuration.",
+      "methods": [
+        "save(message: IMcpMessage): Promise<void> – Persists an MCP message.",
+        "load(id: string): Promise<IMcpMessage> – Loads an MCP message by ID."
+      ]
+    }
+  },
+  "availableImports": {
+    "fromModelContextProtocolSDK": {
+      "McpClient": {
+        "methods": [
+          "processMessage(message: string): Promise<string>",
+          "connect(options?: object): Promise<void>"
+        ],
+        "usage": "Instantiate and use to connect to MCP servers and process messages."
+      }
+    },
+    "fromAnthropicAiSDK": {
+      "AnthropicClient": {
+        "methods": [
+          "sendRequest(payload: any): Promise<any>",
+          "getResponse(): Promise<any>"
+        ],
+        "usage": "Instantiate within AnthropicClient.ts to integrate Anthropic AI functionality per the ILLMProvider interface."
+      }
+    }
+  },
+  "testingRequirements": {
+    "unitTests": [
+      "Write unit tests for each service and utility using Vitest.",
+      "Ensure coverage of both success and error cases."
+    ],
+    "integrationTests": [
+      "Use Playwright to test end-to-end functionality of the chat interface and dynamic server instantiation.",
+      "Verify that commands and configuration updates work as expected."
+    ]
+  },
+  "errorHandlingPreferences": {
+    "guidelines": [
+      "Wrap async operations in try/catch blocks.",
+      "Log errors with contextual information using a consistent logging format.",
+      "Provide user-friendly error messages and implement global error boundaries for UI components."
+    ]
+  },
+  "aiAssistanceGuidance": {
+    "context": "For AI-assisted coding with Cursor IDE, provide concise, context-specific prompts referencing project tokens such as @File, @Folder, @Codebase, @Docs, and @Notepad.",
+    "chatPrompts": [
+      "Example: 'List common pitfalls when implementing configuration persistence in an Electron project.'",
+      "Example: 'What are best practices for separating business logic from UI in a Svelte application?'"
+    ],
+    "composerPrompts": [
+      "Example: 'Generate a TypeScript interface for a generic MCP client with methods processMessage and sendRequest.'",
+      "Example: 'Produce a code snippet for AnthropicClient.ts implementing the ILLMProvider interface.'"
+    ]
+  },
+  "finalSteps": {
+    "instructions": "Before creating a pull request, run all quality checks (pnpm lint:check, pnpm format:check, pnpm typecheck, pnpm test). Commit changes with Conventional Commit messages, update documentation in @Docs, and log decisions in @Notepad. Ensure extension code is isolated in @Folder 'extensions/mcp' and does not affect core modules."
+  },
+  "notes": {
+    "documentationGuidelines": [
+      "Use JSDoc to document functions, classes, and interfaces.",
+      "Maintain design decisions, troubleshooting logs, and refactoring notes in the internal @Notepad.",
+      "Keep a comprehensive README in @Docs for installation, usage, and developer guidelines."
+    ],
+    "maintenance": [
+      "Regularly review dependency versions and update via pnpm update.",
+      "Conduct code reviews focusing on dependency injection, separation of concerns, and adherence to SOLID principles.",
+      "Run integration tests frequently to catch issues early."
+    ]
+  }
+}

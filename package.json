@@ -15,7 +15,7 @@
   "scripts": {
     "build": "pnpm run build:main && pnpm run build:preload && pnpm run build:preload-docker-extension && pnpm run build:preload-webview && pnpm run build:ui && pnpm run build:renderer && pnpm run build:extensions",
     "build:main": "cd ./packages/main && vite build",
-    "build:extensions": "pnpm run build:extensions:compose && pnpm run build:extensions:docker && pnpm run build:extensions:lima && pnpm run build:extensions:podman && pnpm run build:extensions:kubecontext && pnpm run build:extensions:kind && pnpm run build:extensions:registries && pnpm run build:extensions:kubectl-cli",
+    "build:extensions": "pnpm run build:extensions:compose && pnpm run build:extensions:docker && pnpm run build:extensions:lima && pnpm run build:extensions:podman && pnpm run build:extensions:kubecontext && pnpm run build:extensions:kind && pnpm run build:extensions:registries && pnpm run build:extensions:kubectl-cli && pnpm run build:extensions:mcp",
     "build:extensions:compose": "cd ./extensions/compose && pnpm run build",
     "build:extensions:docker": "cd ./extensions/docker && pnpm run build",
     "build:extensions:kubecontext": "cd ./extensions/kube-context && pnpm run build",
@@ -24,6 +24,7 @@
     "build:extensions:podman": "cd ./extensions/podman/packages/extension && pnpm run build",
     "build:extensions:registries": "cd ./extensions/registries && pnpm run build",
     "build:extensions:kubectl-cli": "cd ./extensions/kubectl-cli && pnpm run build",
+    "build:extensions:mcp": "cd ./extensions/mcp && pnpm run build",
     "build:extension-api": "cd ./packages/extension-api && vite build",
     "build:preload": "cd ./packages/preload && vite build",
     "build:preload-docker-extension": "cd ./packages/preload-docker-extension && vite build",
