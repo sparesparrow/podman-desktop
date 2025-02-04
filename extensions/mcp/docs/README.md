@@ -1,83 +1,35 @@
-# MCP Extension for Podman Desktop
+# MCP Server Manager Extension for Podman Desktop
 
 ## Overview
 
-This extension implements MCP (Model Context Protocol) server management for Podman Desktop, enabling AI-powered container management features through Anthropic's Claude models.
+This extension manages MCP servers by running each server in its own container. It follows design principles such as SOLID and KISS and uses dependency injection, MVC patterns, and a modular approach with Svelte and TypeScript.
 
-## Architecture
+## Recent Changes
 
-The extension follows a layered architecture:
+- **Version Update:** The extension version is now **1.0.0**.
+- **Dependency Update:** Package dependencies in `package.json` and lock file `pnpm-lock.yaml` have been revised.
+- **Build & Test Enhancements:**  
+  - Build scripts now use Vite for faster compilation.
+  - Tests have been updated to use Vitest, with improved mocks and error handling.
+- **Error Handling Improvements:** Error messages are now standardized to offer clear user feedback.
+- **Text-to-Speech Optimization:** This document and the code files use short, clear sentences and simple language to improve accessibility for text-to-speech users.
 
-- **MCP Client Layer**: Core protocol implementation using @modelcontextprotocol/sdk
-- **LLM Integration**: Anthropic client integration via @anthropic-ai/sdk
-- **Container Management**: Manages MCP server containers using Podman Desktop's API
+## Review and Action Steps
 
-## Components
+1. **Dependency Verification:**  
+   Review `package.json` and `pnpm-lock.yaml` to ensure all dependencies are correctly installed and compatible.
 
-### Core Services
+2. **Build Process:**  
+   Run `pnpm build` to verify that the production build is generated in the `dist` folder with source maps.
 
-- `AnthropicClient`: LLM provider implementation
-- `ConfigurationManager`: Handles server configurations
-- `ContainerManager`: Manages container lifecycle
-- `McpClient`: Implements MCP protocol
-- `McpServer`: Server instance management
+3. **Testing:**  
+   Execute `pnpm test` to run all unit tests. Confirm that tests for the MCP client, server, and configuration manager complete without errors.
 
-### UI Components
+4. **Error Handling Check:**  
+   Verify that error messages (e.g. for connection failures) are clear and consistent as per the updated test expectations.
 
-- `ChatInterface`: Svelte-based chat interface using Podman Desktop's theming
+5. **Accessibility Review:**  
+   Use a text-to-speech tool to read this document. Ensure that the language is simple and that each step is easy to follow.
 
-## Development
-
-### Prerequisites
-
-- Node.js 20+
-- pnpm 9.x
-- Podman Desktop development environment
-
-### Setup
-
-1. Install dependencies:
-```bash
-pnpm install
-```
-
-2. Build the extension:
-```bash
-pnpm build
-```
-
-3. Run in development mode:
-```bash
-pnpm watch
-```
-
-### Testing
-
-Run unit tests:
-```bash
-pnpm test
-```
-
-## Configuration
-
-Server configurations are managed through the extension's configuration panel. Each MCP server requires:
-
-- Name
-- Command
-- Arguments
-- Optional environment variables and working directory
-
-## Security
-
-- API keys are stored securely using Podman Desktop's storage API
-- Containers run with appropriate isolation
-- Error messages are sanitized to prevent information leakage
-
-## Contributing
-
-Follow Podman Desktop's contribution guidelines and ensure:
-
-1. Code follows SOLID principles
-2. Changes are properly tested
-3. Documentation is updated
-4. UI components use Podman Desktop's theming system 
+6. **Quality Assurance:**  
+   Run `pnpm lint:check`, `pnpm format:check`, and `pnpm typecheck` to ensure code quality before committing changes.

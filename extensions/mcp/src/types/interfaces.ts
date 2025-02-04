@@ -31,7 +31,13 @@ export interface ServerConfig {
   tools?: ToolConfig[];
 }
 
-export type ServerStatus = 'STARTING' | 'RUNNING' | 'STOPPING' | 'STOPPED' | 'ERROR';
+export enum ServerStatus {
+  STARTING = 'STARTING',
+  RUNNING = 'RUNNING',
+  STOPPING = 'STOPPING',
+  STOPPED = 'STOPPED',
+  ERROR = 'ERROR'
+}
 
 export interface ServerCapabilities {
   supportedTools: string[];
@@ -107,69 +113,3 @@ export interface ExecResult {
   stdout: string;
   stderr: string;
 }
-
-export interface IMcpServer {
-  connect(options?: ConnectionOptions): Promise<void>;
-}
-
-export interface IMcpServerFactory {
-  createServer(config: ServerConfig): IMcpServer;
-}
-
-export interface IMcpTransport {
-  send(data: TransportData): Promise<TransportResponse>;
-  receive(): Promise<TransportData>;
-}
-
-export interface IMcpMessage {
-  id: string;
-  type: 'request' | 'response' | 'notification';
-  payload: Record<string, unknown>;
-}
-
-export interface IMcpDao {
-  save(message: IMcpMessage): Promise<void>;
-  load(id: string): Promise<IMcpMessage>;
-}
-
-export interface McpNotification {
-  type: string;
-  payload: Record<string, unknown>;
-}
-
-export interface TransportData {
-  type: 'request' | 'response' | 'notification';
-  payload: Record<string, unknown>;
-}
-
-export interface TransportResponse {
-  success: boolean;
-  data?: Record<string, unknown>;
-  error?: string;
-}
-
-export interface ConnectionOptions {
-  timeout?: number;
-  retryAttempts?: number;
-  secure?: boolean;
-}
-
-export interface ServerInfo {
-  name: string;
-  status: ServerStatus;
-  capabilities: ServerCapabilities;
-  version: string;
-}
-
-export enum ErrorCode {
-  SERVER_START_FAILED = 'SERVER_START_FAILED',
-  SERVER_NOT_FOUND = 'SERVER_NOT_FOUND',
-  CONTAINER_ERROR = 'CONTAINER_ERROR',
-  COMMUNICATION_ERROR = 'COMMUNICATION_ERROR',
-  INVALID_CONFIGURATION = 'INVALID_CONFIGURATION'
-}
-
-export interface McpError extends Error {
-  code: ErrorCode;
-  details?: unknown;
-} 

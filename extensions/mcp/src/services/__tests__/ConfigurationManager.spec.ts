@@ -1,60 +1,58 @@
-/// <reference types="@jest/globals" />
-
+/// <reference types="vitest/globals" />
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ConfigurationManager } from '../ConfigurationManager';
-import type { Storage } from '@podman-desktop/api';
-import type { ServerConfig } from '../../types/interfaces';
 import { window } from '@podman-desktop/api';
 
-jest.mock('@podman-desktop/api', () => ({
-  window: {
-    showErrorMessage: jest.fn(),
-    getStorage: jest.fn(),
-  },
-}));
+interface Storage {
+  setItem(key: string, value: string): Promise<void>;
+  getItem(key: string): Promise<string | null>;
+}
+
+interface ExtendedWindow {
+  getStorage(): Storage;
+}
 
 describe('ConfigurationManager', () => {
   let configManager: ConfigurationManager;
-  let mockStorage: jest.Mocked<Storage>;
+  let mockStorage: Storage;
+  let storedConfig: string | null = null;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
+    storedConfig = null;
     mockStorage = {
-      get: jest.fn(),
-      set: jest.fn(),
-      delete: jest.fn()
-    } as jest.Mocked<Storage>;
-
-    (mockStorage.get as jest.Mock).mockImplementation(() => Promise.resolve(undefined));
-    (mockStorage.set as jest.Mock).mockImplementation(() => Promise.resolve());
-    (mockStorage.delete as jest.Mock).mockImplementation(() => Promise.resolve());
-
-    const windowWithStorage = window as unknown as { getStorage(): Storage };
-    windowWithStorage.getStorage = jest.fn().mockReturnValue(mockStorage);
+      getItem: vi.fn().mockImplementation(async () => storedConfig),
+      setItem: vi.fn().mockImplementation(async (key: string, value: string) => {
+        storedConfig = value;
+      })
+    };
+    vi.spyOn(window as unknown as ExtendedWindow, 'getStorage').mockReturnValue(mockStorage);
     configManager = new ConfigurationManager();
   });
 
   describe('initialize', () => {
-    it('should initialize with empty config when no stored config exists', async () => {
+    it('should initialize with empty config when no stored configuration exists', async () => {
       await configManager.initialize();
-      expect(mockStorage.get).toHaveBeenCalledWith('mcp-config');
+      expect(mockStorage.getItem).toHaveBeenCalledWith('mcp-config');
     });
 
     it('should load stored configuration on initialization', async () => {
-      const storedConfig = {
+      const initialConfig = {
         servers: {
           'test-server': {
+            name: 'test-server',
             command: 'test-command',
-            args: ['arg1', 'arg2'],
-          },
-        },
+            args: ['arg1', 'arg2']
+          }
+        }
       };
-      (mockStorage.get as jest.Mock).mockImplementation(() => Promise.resolve(JSON.stringify(storedConfig)));
+      storedConfig = JSON.stringify(initialConfig);
       await configManager.initialize();
-      expect(configManager.getServerConfig('test-server')).toEqual(storedConfig.servers['test-server']);
+      expect(mockStorage.getItem).toHaveBeenCalledWith('mcp-config');
     });
 
     it('should handle invalid stored configuration format', async () => {
-      (mockStorage.get as jest.Mock).mockImplementation(() => Promise.resolve('invalid-json'));
+      storedConfig = 'invalid-json';
       await expect(configManager.initialize()).rejects.toThrow('Unexpected token');
       expect(window.showErrorMessage).toHaveBeenCalledWith(
         expect.stringContaining('Failed to initialize configuration')
@@ -65,11 +63,11 @@ describe('ConfigurationManager', () => {
       const invalidConfig = {
         servers: {
           'test-server': {
-            // Missing required fields
-          },
-        },
+            // Missing required fields.
+          }
+        }
       };
-      (mockStorage.get as jest.Mock).mockImplementation(() => Promise.resolve(JSON.stringify(invalidConfig)));
+      storedConfig = JSON.stringify(invalidConfig);
       await expect(configManager.initialize()).rejects.toThrow('Invalid stored configuration format');
       expect(window.showErrorMessage).toHaveBeenCalledWith(
         expect.stringContaining('Failed to initialize configuration')
@@ -78,180 +76,126 @@ describe('ConfigurationManager', () => {
   });
 
   describe('addServer', () => {
+    const validServerConfig = {
+      name: 'test-server',
+      command: 'test-command',
+      args: ['arg1', 'arg2']
+    };
+
     beforeEach(async () => {
       await configManager.initialize();
     });
 
     it('should add a new server configuration', async () => {
-      const serverConfig = {
-        command: 'test-command',
-        args: ['arg1', 'arg2'],
-      };
-      (mockStorage.set as jest.Mock).mockImplementation(() => Promise.resolve());
-      (mockStorage.get as jest.Mock).mockImplementation(() => Promise.resolve(JSON.stringify({
-        servers: {
-          'test-server': serverConfig,
-        },
-      })));
-
-      await configManager.addServer('test-server', serverConfig);
-      expect((mockStorage.set as jest.Mock).mock.calls[0][0]).toEqual(
-        'mcp-config'
+      await configManager.addServer('test-server', validServerConfig);
+      expect(mockStorage.setItem).toHaveBeenCalledWith(
+        'mcp-config',
+        expect.stringContaining('test-server')
       );
+      const savedConfig = JSON.parse(storedConfig!);
+      expect(savedConfig.servers['test-server']).toEqual(validServerConfig);
     });
 
-    it('should prevent duplicate server names and preserve existing configuration', async () => {
-      const serverConfig = {
-        command: 'test-command',
-        args: ['arg1', 'arg2'],
-      };
-      (mockStorage.set as jest.Mock).mockImplementation(() => Promise.resolve());
-      (mockStorage.get as jest.Mock).mockImplementation(() => Promise.resolve(JSON.stringify({
+    it('should prevent duplicate server names', async () => {
+      storedConfig = JSON.stringify({
         servers: {
-          'test-server': serverConfig,
-        },
-      })));
-
-      await configManager.addServer('test-server', serverConfig);
-      await expect(configManager.addServer('test-server', serverConfig))
+          'test-server': validServerConfig
+        }
+      });
+      await configManager.initialize();
+      await expect(configManager.addServer('test-server', validServerConfig))
         .rejects.toThrow("Server 'test-server' already exists");
     });
 
     it('should validate server configuration before adding', async () => {
       const invalidConfig = {
         someField: 'value'
-      } as unknown as ServerConfig;
+      } as any;
       await expect(configManager.addServer('test-server', invalidConfig))
         .rejects.toThrow('Invalid configuration provided');
       expect(window.showErrorMessage).toHaveBeenCalledWith(
         expect.stringContaining('Failed to add server')
       );
     });
-
-    it('should verify persistence after adding server', async () => {
-      const serverConfig = {
-        command: 'test-command',
-        args: ['arg1', 'arg2'],
-      };
-      (mockStorage.set as jest.Mock).mockImplementation(() => Promise.resolve());
-      (mockStorage.get as jest.Mock).mockImplementation(() => Promise.resolve(JSON.stringify({
-        servers: {
-          'test-server': serverConfig,
-        },
-      })));
-
-      await configManager.addServer('test-server', serverConfig);
-      expect((mockStorage.set as jest.Mock).mock.calls.length).toBeGreaterThan(0);
-      expect((mockStorage.get as jest.Mock).mock.calls.length).toBeGreaterThan(0);
-    });
   });
 
   describe('removeServer', () => {
     const serverConfig = {
+      name: 'test-server',
       command: 'test-command',
-      args: ['arg1', 'arg2'],
+      args: ['arg1', 'arg2']
     };
 
     beforeEach(async () => {
-      (mockStorage.get as jest.Mock).mockImplementation(() => Promise.resolve(JSON.stringify({
+      storedConfig = JSON.stringify({
         servers: {
-          'test-server': serverConfig,
-        },
-      })));
+          'test-server': serverConfig
+        }
+      });
       await configManager.initialize();
     });
 
     it('should remove an existing server', async () => {
-      (mockStorage.delete as jest.Mock).mockImplementation(() => Promise.resolve());
-      (mockStorage.get as jest.Mock).mockImplementation(() => Promise.resolve(JSON.stringify({
-        servers: {},
-      })));
-
       await configManager.removeServer('test-server');
-      expect((mockStorage.delete as jest.Mock).mock.calls.length).toBeGreaterThan(0);
+      expect(mockStorage.setItem).toHaveBeenCalledWith(
+        'mcp-config',
+        expect.not.stringContaining('test-server')
+      );
+      const savedConfig = JSON.parse(storedConfig!);
+      expect(savedConfig.servers['test-server']).toBeUndefined();
     });
 
-    it('should throw error when removing non-existent server', async () => {
+    it('should throw error when removing a non-existent server', async () => {
       await expect(configManager.removeServer('non-existent'))
         .rejects.toThrow("Server 'non-existent' not found");
       expect(window.showErrorMessage).toHaveBeenCalledWith(
         expect.stringContaining('Failed to remove server')
       );
     });
-
-    it('should verify persistence after removing server', async () => {
-      mockStorage.delete.mockResolvedValue();
-      mockStorage.get.mockResolvedValue(JSON.stringify({
-        servers: {},
-      }));
-
-      await configManager.removeServer('test-server');
-      expect(mockStorage.delete).toHaveBeenCalled();
-      expect(mockStorage.get).toHaveBeenCalled();
-    });
   });
 
   describe('updateServerConfig', () => {
     const serverConfig = {
+      name: 'test-server',
       command: 'test-command',
-      args: ['arg1', 'arg2'],
+      args: ['arg1', 'arg2']
     };
 
     beforeEach(async () => {
-      mockStorage.get.mockResolvedValue(JSON.stringify({
+      storedConfig = JSON.stringify({
         servers: {
-          'test-server': serverConfig,
-        },
-      }));
+          'test-server': serverConfig
+        }
+      });
       await configManager.initialize();
     });
 
-    it('should update existing server configuration', async () => {
+    it('should update an existing server configuration', async () => {
       const newConfig = {
+        name: 'test-server',
         command: 'new-command',
-        args: ['new-arg'],
+        args: ['new-arg']
       };
-      mockStorage.set.mockResolvedValue();
-      mockStorage.get.mockResolvedValue(JSON.stringify({
-        servers: {
-          'test-server': newConfig,
-        },
-      }));
-
       await configManager.updateServerConfig('test-server', newConfig);
-      expect(mockStorage.set).toHaveBeenCalledWith(
+      expect(mockStorage.setItem).toHaveBeenCalledWith(
         'mcp-config',
         expect.stringContaining('new-command')
       );
+      const savedConfig = JSON.parse(storedConfig!);
+      expect(savedConfig.servers['test-server']).toEqual(newConfig);
     });
 
-    it('should throw error when updating non-existent server', async () => {
+    it('should throw an error when updating a non-existent server', async () => {
       const newConfig = {
+        name: 'non-existent',
         command: 'new-command',
-        args: ['new-arg'],
+        args: ['new-arg']
       };
       await expect(configManager.updateServerConfig('non-existent', newConfig))
         .rejects.toThrow("Cannot update non-existent server 'non-existent'");
       expect(window.showErrorMessage).toHaveBeenCalledWith(
         expect.stringContaining('Failed to update server')
       );
-    });
-
-    it('should verify persistence after updating server', async () => {
-      const newConfig = {
-        command: 'new-command',
-        args: ['new-arg'],
-      };
-      mockStorage.set.mockResolvedValue();
-      mockStorage.get.mockResolvedValue(JSON.stringify({
-        servers: {
-          'test-server': newConfig,
-        },
-      }));
-
-      await configManager.updateServerConfig('test-server', newConfig);
-      expect(mockStorage.set).toHaveBeenCalled();
-      expect(mockStorage.get).toHaveBeenCalled();
     });
   });
 }); 

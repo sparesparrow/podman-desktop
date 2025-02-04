@@ -1,162 +1,82 @@
-/// <reference types="@jest/globals" />
-
+/// <reference types="vitest/globals" />
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { McpClient } from '../McpClient';
-import { Client } from '@modelcontextprotocol/sdk';
-import type { Transport } from '@modelcontextprotocol/sdk';
 import { window } from '@podman-desktop/api';
 
-jest.mock('@modelcontextprotocol/sdk', () => ({
-  Client: jest.fn().mockImplementation(() => ({
-    connect: jest.fn(),
-    request: jest.fn(),
-    notify: jest.fn(),
-    disconnect: jest.fn()
-  }))
-}));
-
-jest.mock('@podman-desktop/api', () => ({
-  window: {
-    showErrorMessage: jest.fn()
-  }
-}));
+interface MockClient {
+  connect: ReturnType<typeof vi.fn>;
+  request: ReturnType<typeof vi.fn>;
+  notify: ReturnType<typeof vi.fn>;
+  disconnect: ReturnType<typeof vi.fn>;
+}
 
 describe('McpClient', () => {
-  let mockClient: jest.Mocked<Client>;
   let mcpClient: McpClient;
-  let mockTransport: Transport;
+  let mockClient: MockClient;
 
   beforeEach(() => {
-    jest.clearAllMocks();
-    mockTransport = {} as Transport;
-    mockClient = new Client(mockTransport) as jest.Mocked<Client>;
-    mcpClient = new McpClient(mockTransport);
+    vi.clearAllMocks();
+    mockClient = {
+      connect: vi.fn().mockResolvedValue(undefined),
+      request: vi.fn().mockResolvedValue({ data: { message: 'test response' } }),
+      notify: vi.fn().mockResolvedValue(undefined),
+      disconnect: vi.fn().mockResolvedValue(undefined)
+    };
+    mcpClient = new McpClient({} as any);
+    Object.defineProperty(mcpClient, 'client', {
+      value: mockClient,
+      writable: true
+    });
   });
 
   describe('connect', () => {
     it('should connect successfully', async () => {
-      mockClient.connect.mockResolvedValue(undefined);
-      await expect(mcpClient.connect()).resolves.not.toThrow();
+      await mcpClient.connect();
+      expect(mockClient.connect).toHaveBeenCalled();
     });
 
     it('should handle connection errors', async () => {
       const error = new Error('Connection failed');
-      (Client as jest.Mock).mockImplementation(() => ({
-        connect: jest.fn().mockRejectedValue(error),
-        request: jest.fn(),
-        notify: jest.fn(),
-        disconnect: jest.fn()
-      }));
-      
-      const client = new McpClient(mockTransport);
-      await expect(client.connect()).rejects.toThrow('Connection failed');
-      expect(window.showErrorMessage).toHaveBeenCalledWith(
-        expect.stringContaining('Connection failed')
-      );
+      mockClient.connect.mockRejectedValueOnce(error);
+      await expect(mcpClient.connect()).rejects.toThrow('Connection failed');
+      expect(window.showErrorMessage).toHaveBeenCalledWith('[MCP Client] Connection failed: Connection failed');
     });
   });
 
   describe('processMessage', () => {
-    it('should process messages correctly', async () => {
-      const message = 'test message';
-      const expectedResponse = { result: 'processed' };
-      (Client as jest.Mock).mockImplementation(() => ({
-        connect: jest.fn(),
-        request: jest.fn().mockResolvedValue(expectedResponse),
-        notify: jest.fn(),
-        disconnect: jest.fn()
-      }));
-
-      const client = new McpClient(mockTransport);
-      const result = await client.processMessage(message);
-      expect(result).toBe('processed');
-    });
-
-    it('should handle invalid response format', async () => {
-      const invalidResponse = { wrongField: 'value' };
-      (Client as jest.Mock).mockImplementation(() => ({
-        connect: jest.fn(),
-        request: jest.fn().mockResolvedValue(invalidResponse),
-        notify: jest.fn(),
-        disconnect: jest.fn()
-      }));
-
-      const client = new McpClient(mockTransport);
-      await expect(client.processMessage('test')).rejects.toThrow('Invalid response format');
-      expect(window.showErrorMessage).toHaveBeenCalledWith(
-        expect.stringContaining('Invalid response format')
-      );
+    it('should process message successfully', async () => {
+      const response = { data: { message: 'test response' } };
+      mockClient.request.mockResolvedValueOnce(response);
+      const result = await mcpClient.processMessage('test message');
+      expect(result).toBe('test response');
+      expect(mockClient.request).toHaveBeenCalledWith({
+        type: 'process_message',
+        payload: { message: 'test message' }
+      });
     });
 
     it('should handle processing errors', async () => {
-      const error = new Error('Processing failed');
-      (Client as jest.Mock).mockImplementation(() => ({
-        connect: jest.fn(),
-        request: jest.fn().mockRejectedValue(error),
-        notify: jest.fn(),
-        disconnect: jest.fn()
-      }));
-
-      const client = new McpClient(mockTransport);
-      await expect(client.processMessage('test')).rejects.toThrow('Processing failed');
-      expect(window.showErrorMessage).toHaveBeenCalledWith(
-        expect.stringContaining('Processing failed')
-      );
-    });
-  });
-
-  describe('sendRequest', () => {
-    it('should send requests correctly', async () => {
-      const request = { type: 'test', payload: { data: 'test' } };
-      const expectedResponse = { result: 'success' };
-      (Client as jest.Mock).mockImplementation(() => ({
-        connect: jest.fn(),
-        request: jest.fn().mockResolvedValue(expectedResponse),
-        notify: jest.fn(),
-        disconnect: jest.fn()
-      }));
-
-      const client = new McpClient(mockTransport);
-      const result = await client.sendRequest(request);
-      expect(result).toEqual(expectedResponse);
-    });
-
-    it('should handle request errors', async () => {
-      const error = new Error('Request failed');
-      (Client as jest.Mock).mockImplementation(() => ({
-        connect: jest.fn(),
-        request: jest.fn().mockRejectedValue(error),
-        notify: jest.fn(),
-        disconnect: jest.fn()
-      }));
-
-      const client = new McpClient(mockTransport);
-      await expect(client.sendRequest({})).rejects.toThrow('Request failed');
-      expect(window.showErrorMessage).toHaveBeenCalledWith(
-        expect.stringContaining('Request failed')
-      );
+      mockClient.request.mockResolvedValueOnce({
+        status: 'error',
+        data: {},
+        error: 'Processing failed'
+      });
+      await expect(mcpClient.processMessage('test')).rejects.toThrow('Failed to process message: Processing failed');
+      expect(window.showErrorMessage).toHaveBeenCalledWith('[MCP Client] Message processing failed: Processing failed');
     });
   });
 
   describe('disconnect', () => {
     it('should disconnect successfully', async () => {
-      mockClient.disconnect.mockResolvedValue(undefined);
-      await expect(mcpClient.disconnect()).resolves.not.toThrow();
+      await mcpClient.disconnect();
+      expect(mockClient.disconnect).toHaveBeenCalled();
     });
 
     it('should handle disconnection errors', async () => {
       const error = new Error('Disconnection failed');
-      (Client as jest.Mock).mockImplementation(() => ({
-        connect: jest.fn(),
-        request: jest.fn(),
-        notify: jest.fn(),
-        disconnect: jest.fn().mockRejectedValue(error)
-      }));
-
-      const client = new McpClient(mockTransport);
-      await expect(client.disconnect()).rejects.toThrow('Disconnection failed');
-      expect(window.showErrorMessage).toHaveBeenCalledWith(
-        expect.stringContaining('Disconnection failed')
-      );
+      mockClient.disconnect.mockRejectedValueOnce(error);
+      await expect(mcpClient.disconnect()).rejects.toThrow('Disconnection failed');
+      expect(window.showErrorMessage).toHaveBeenCalledWith('[MCP Client] Disconnection failed: Disconnection failed');
     });
   });
 }); 

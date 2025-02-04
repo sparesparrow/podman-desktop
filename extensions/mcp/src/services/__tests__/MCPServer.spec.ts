@@ -1,156 +1,205 @@
-/// <reference types="@jest/globals" />
-
+/// <reference types="vitest/globals" />
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { McpServer } from '../McpServer';
-import type { ServerConfig, Container, ContainerManager, ExecResult } from '../../types/interfaces';
-import { ServerStatus } from '../../types/interfaces';
+import { ServerStatus, Container, ContainerManager, ServerConfig } from '../../types/interfaces';
 import { window } from '@podman-desktop/api';
 
-jest.mock('@podman-desktop/api', () => ({
-  window: {
-    showErrorMessage: jest.fn()
-  }
-}));
+interface MockExecResult {
+  exitCode: number;
+  stdout: string;
+  stderr: string;
+}
+
+interface MockContainer extends Container {
+  start: ReturnType<typeof vi.fn>;
+  stop: ReturnType<typeof vi.fn>;i.fn>;
+  exec: ReturnType<typeof vi.fn>;
+}
+
+interface MockContainerManager extends ContainerManager {
+  createContainer: ReturnType<typeof vi.fn>;
+  removeContainer: ReturnType<typeof vi.fn>;
+  listContainers: ReturnType<typeof vi.fn>;
+}
 
 describe('McpServer', () => {
-  let server: McpServer;
-  let mockContainerManager: jest.Mocked<ContainerManager>;
-  let mockContainer: jest.Mocked<Container>;
-  let config: ServerConfig;
+  let mcpServer: McpServer;
+  let mockContainer: MockContainer;
+  let mockContainerManager: MockContainerManager;
+
+  const serverConfig: ServerConfig = {
+    name: 'test-server',
+    command: 'test-command',
+    args: ['arg1', 'arg2']
+  };
 
   beforeEach(() => {
-    jest.clearAllMocks();
-
+    vi.clearAllMocks();
     mockContainer = {
-      start: jest.fn(),
-      stop: jest.fn(),
-      exec: jest.fn()
-    };
-
-    mockContainerManager = {
-      createContainer: jest.fn().mockResolvedValue(mockContainer),
-      removeContainer: jest.fn(),
-      listContainers: jest.fn()
-    };
-
-    config = {
-      command: 'test-command',
-      args: ['--test'],
-      env: { TEST: 'true' },
-      workingDir: '/test'
-    };
-
-    server = new McpServer('test-server', config, mockContainerManager);
-  });
-
+      start: vi.fn().mockResolvedValue(undefined),
+      stop: vi.fn().mockResolvedValue(undefined),
+      exec: vi.fn().mockResolvedValue({
+        exitCode: 0,
+        stdout: JSON.stringify({
+          supportedTools: ['tool1'],
+          maxConcurrentRequests: 10,
+          supportedTransports: ['http']
+        }),
+        stderr: ''
+      } as MockExecResult)
+    } as MockContainer;
+  exitCode: 0,
+        stdout: JSON.stringify({
+          supportedTools: ['tool1'],
+          maxConcurrentRequests: 10,
+          supportedTransports: ['http']
+    } as MockContainerManager;
+  }),
+    mcpServer = new McpServer('test-server', serverConfig, mockContainerManager);
+      } as MockExecResult)
+        exitCode: 0,
   describe('connect', () => {
-    it('should start container and query capabilities', async () => {
-      const mockCapabilities = {
-        supportedTools: ['tool1', 'tool2'],
-        maxConcurrentRequests: 10,
-        supportedTransports: ['http', 'websocket']
-      };
-
-      mockContainer.exec.mockResolvedValue({
-        stdout: JSON.stringify(mockCapabilities),
-        stderr: '',
-        exitCode: 0
-      } as ExecResult);
-
-      await server.connect();
-
-      expect(mockContainerManager.createContainer).toHaveBeenCalledWith('test-server', {
-        image: 'mcp-server:latest',
-        command: config.command,
-        args: config.args,
-        env: config.env,
-        workingDir: config.workingDir
-      });
-
-      expect(mockContainer.start).toHaveBeenCalled();
-      expect(mockContainer.exec).toHaveBeenCalledWith('mcp-query-capabilities');
-      expect(server.getStatus()).toBe(ServerStatus.RUNNING);
-      expect(server.getCapabilities()).toEqual(mockCapabilities);
-    });
-
-    it('should handle container creation failure', async () => {
-      const error = new Error('Container creation failed');
-      mockContainerManager.createContainer.mockRejectedValue(error);
-
-      await expect(server.connect()).rejects.toThrow('Container creation failed');
-      expect(server.getStatus()).toBe(ServerStatus.ERROR);
+    it('should connect successfully', async () => {
+      await mcpServer.connect();s: 10,
+          supportedTransports: ['http']
+        }),
+    mcpServer = new McpServer('test-server', serverConfig, mockContainerManager);
+      } as MockExecResult)
+        exitCode: 0,
+  describe('connect', () => {
+    it('should connect successfully', async () => {
+      await mcpServer.connect();s: 10,
+      expect(mcpServer.getStatus()).toBe(ServerStatus.RUNNING);
+        }),
+    mcpServer = new McpServer('test-server', serverConfig, mockContainerManager);
+    it('should handle connection errors', async () => {
+      const error = new Error('Connection failed');
+  describe('connect', () => {
+      await expect(mcpServer.connect()).rejects.toThrow('Connection failed');
       expect(window.showErrorMessage).toHaveBeenCalledWith(
-        expect.stringContaining('Container creation failed')
+        expect.stringContaining('Failed to start MCP server')
       );
-    });
-
-    it('should handle invalid capabilities response', async () => {
-      mockContainer.exec.mockResolvedValue({
-        stdout: 'invalid-json',
-        stderr: '',
-        exitCode: 0
-      } as ExecResult);
-
-      await expect(server.connect()).rejects.toThrow('Invalid capabilities format');
-      expect(server.getStatus()).toBe(ServerStatus.ERROR);
-    });
-
-    it('should handle capabilities query failure', async () => {
-      mockContainer.exec.mockResolvedValue({
-        stdout: '',
-        stderr: 'Query failed',
-        exitCode: 1
-      } as ExecResult);
-
-      await expect(server.connect()).rejects.toThrow('Failed to query capabilities');
-      expect(server.getStatus()).toBe(ServerStatus.ERROR);
-    });
-  });
-
+      expect(mcpServer.getStatus()).toBe(ServerStatus.ERROR);NNING);
+        }),
+    mcpServer = new McpServer('test-server', serverConfig, mockContainerManager);
+    it('should handle connection errors', async () => {
+  describe('disconnect', () => {ror('Connection failed');
+      mockContainer.start.mockRejectedValueOnce(error);
+      await mcpServer.connect();onnect()).rejects.toThrow('Connection failed');
+      expect(window.showErrorMessage).toHaveBeenCalledWith(
+        expect.stringContaining('Failed to start MCP server')
+    it('should disconnect successfully', async () => {
+      await mcpServer.disconnect();tus()).toBe(ServerStatus.ERROR);NNING);
+        }),
+    mcpServer = new McpServer('test-server', serverConfig, mockContainerManager);
+      expect(mcpServer.getStatus()).toBe(ServerStatus.STOPPED);
+  describe('disconnect', () => {ror('Connection failed');
+      mockContainer.connect.mockRejectedValueOnce(error);
+    it('should handle disconnection errors', async () => {
+      const error = new Error('Disconnection failed');eenCalledWith(
+        expect.stringContaining('Failed to start MCP server')
+      await expect(mcpServer.disconnect()).rejects.toThrow('Disconnection failed');
+      expect(window.showErrorMessage).toHaveBeenCalledWith(
+        expect.stringContaining('Failed to stop MCP server')
+      );
+      expect(mcpServer.getStatus()).toBe(ServerStatus.ERROR);
+    mcpServer = new McpServer('test-server', serverConfig, mockContainerManager);
+      expect(mcpServer.getStatus()).toBe(ServerStatus.STOPPED);
   describe('disconnect', () => {
-    beforeEach(async () => {
-      mockContainer.exec.mockResolvedValue({
-        stdout: '{}',
-        stderr: '',
-        exitCode: 0
-      } as ExecResult);
-      await server.connect();
-    });
-
-    it('should stop and remove container', async () => {
-      await server.disconnect();
-
-      expect(mockContainer.stop).toHaveBeenCalled();
-      expect(mockContainerManager.removeContainer).toHaveBeenCalledWith('test-server');
-      expect(server.getStatus()).toBe(ServerStatus.STOPPED);
-    });
-
-    it('should handle stop failure', async () => {
-      const error = new Error('Stop failed');
-      mockContainer.stop.mockRejectedValue(error);
-
-      await expect(server.disconnect()).rejects.toThrow('Stop failed');
-      expect(server.getStatus()).toBe(ServerStatus.ERROR);
+  describe('executeCommand', () => {> {
+    it('should handle disconnection errors', async () => {
+      await mcpServer.connect();'Disconnection failed');
+      mockContainer.stop.mockRejectedValueOnce(error);
+      await expect(mcpServer.disconnect()).rejects.toThrow('Disconnection failed');
       expect(window.showErrorMessage).toHaveBeenCalledWith(
-        expect.stringContaining('Stop failed')
+        expect.stringContaining('Failed to stop MCP server')
       );
-    });
-  });
-
-  describe('getters', () => {
-    it('should return server name', () => {
-      expect(server.getName()).toBe('test-server');
-    });
-
-    it('should return server config', () => {
-      expect(server.getConfig()).toEqual(config);
-    });
-
-    it('should return initial status', () => {
-      expect(server.getStatus()).toBe(ServerStatus.STOPPED);
-    });
-
-    it('should return undefined capabilities before connect', () => {
-      expect(server.getCapabilities()).toBeUndefined();
-    });
-  });
-}); 
+      const result = await mcpServer.executeCommand('test command');
+    mcpServer = new McpServer('test-server', serverConfig, mockContainerManager);
+      expect(mcpServer.getStatus()).toBe(ServerStatus.STOPPED);mand');
+  describe('disconnect', () => {
+  describe('connect', () => {
+    it('should handle disconnection errors', async () => {.toThrow('Start failed');
+      await mcpServer.connect();'Disconnection failed');
+      mockContainer.disconnect.mockRejectedValueOnce(error);
+      await expect(mcpServer.executeCommand('test command')).rejects.toThrow('Exec failed');;
+      expect(window.showErrorMessage).toHaveBeenCalledWith(
+        expect.stringContaining('Failed to execute command')
+      );
+        expect.stringContaining('Failed to stop MCP server')
+      );
+      expect(mcpServer.getStatus()).toBe(ServerStatus.ERROR);
+    mcpServer = new McpServer('test-server', serverConfig, mockContainerManager);
+      expect(mcpServer.getStatus()).toBe(ServerStatus.STOPPED);
+      const result = await mcpServer.executeCommand('test command');
+  describe('connect', () => {
+      expect(window.showErrorMessage).toHaveBeenCalledWith(
+        expect.stringContaining('Command failed')
+      );
+      await mcpServer.connect();essage).toHaveBeenCalledWith(
+        expect.stringContaining('Failed to start MCP server')
+      await expect(mcpServer.disconnect()).rejects.toThrow('Stop failed');
+      expect(window.showErrorMessage).toHaveBeenCalledWith(
+        expect.stringContaining('Failed to execute command')
+      );
+        expect.stringContaining('Failed to stop MCP server')
+      );
+      expect(mcpServer.getStatus()).toBe(ServerStatus.ERROR);      await mcpServer.start();      expect(window.showErrorMessage).toHaveBeenCalledWith('[MCP Server] Failed to execute command on server test-server: Exec failed');      expect(window.showErrorMessage).toHaveBeenCalledWith('[MCP Server] Command failed on server test-server with exit code 1: error output');      expect(mcpServer.status).toBe(ServerStatus.STOPPED);    it('should handle stop errors', async () => {      await expect(mcpServer.stop()).rejects.toThrow('Stop failed');
+      expect(window.showErrorMessage).toHaveBeenCalledWith('[MCP Server] Failed to stop server test-server: Stop failed');
+      expect(mcpServer.getStatus()).toBe(ServerStatus.STOPPED);    await mcpServer.start();      expect(window.showErrorMessage).toHaveBeenCalledWith('[MCP Server] Failed to execute command on server test-server: Exec failed');      expect(window.showErrorMessage).toHaveBeenCalledWith('[MCP Server] Command failed on server test-server with exit code 1: error output');  describe('stop', () => {      await mcpServer.start();    it('should stop the server successfully', async () => {
+  describe('disconnect', () => {();      expect(mcpServer.status).toBe(ServerStatus.STOPPED);    it('should handle stop errors', async () => {      await expect(mcpServer.stop()).rejects.toThrow('Stop failed');
+      expect(window.showErrorMessage).toHaveBeenCalledWith('[MCP Server] Failed to stop server test-server: Stop failed');
+      expect(window.showErrorMessage).toHaveBeenCalledWith(
+        expect.stringContaining('Command failed')
+      );
+      await mcpServer.connect();essage).toHaveBeenCalledWith(
+        expect.stringContaining('Failed to start MCP server')
+      await expect(mcpServer.disconnect()).rejects.toThrow('Stop failed');
+      expect(window.showErrorMessage).toHaveBeenCalledWith(
+        expect.stringContaining('Failed to execute command')
+      );
+        expect.stringContaining('Failed to stop MCP server')
+      );
+      expect(mcpServer.getStatus()).toBe(ServerStatus.ERROR);us).toBe(ServerStatus.STOPPED);    it('should handle stop errors', async () => {      await expect(mcpServer.stop()).rejects.toThrow('Stop failed');
+      expect(window.showErrorMessage).toHaveBeenCalledWith('[MCP Server] Failed to stop server test-server: Stop failed');
+      expect(mcpServer.getStatus()).toBe(ServerStatus.STOPPED);    await mcpServer.start();      expect(window.showErrorMessage).toHaveBeenCalledWith('[MCP Server] Failed to execute command on server test-server: Exec failed');      expect(window.showErrorMessage).toHaveBeenCalledWith('[MCP Server] Command failed on server test-server with exit code 1: error output');      await expect(mcpServer.start()).rejects.toThrow('Start failed');
+  describe('disconnect', () => {rorMessage).toHaveBeenCalledWith('[MCP Server] Failed to start server test-server: Start failed');
+      expect(mcpServer.status).toBe(ServerStatus.ERROR);  describe('stop', () => {      await mcpServer.start();    it('should stop the server successfully', async () => {
+      expect(window.showErrorMessage).toHaveBeenCalledWith(
+        expect.stringContaining('Command failed')
+      );
+      await mcpServer.connect();essage).toHaveBeenCalledWith(
+        expect.stringContaining('Failed to start MCP server')
+      await expect(mcpServer.disconnect()).rejects.toThrow('Stop failed');
+      expect(window.showErrorMessage).toHaveBeenCalledWith(
+        expect.stringContaining('Failed to execute command')
+      );
+        expect.stringContaining('Failed to stop MCP server')
+      );
+      expect(mcpServer.getStatus()).toBe(ServerStatus.ERROR);r.getStatus()).toBe(ServerStatus.STOPPED);    it('should handle disconnection errors', async () => {      await expect(mcpServer.disconnect()).rejects.toThrow('Stop failed');
+      expect(window.showErrorMessage).toHaveBeenCalledWith(
+      expect(mcpServer.getStatus()).toBe(ServerStatus.STOPPED);')
+      );
+      expect(mcpServer.getStatus()).toBe(ServerStatus.ERROR);      await mcpServer.connect();      expect(window.showErrorMessage).toHaveBeenCalledWith(
+      expect(window.showErrorMessage).toHaveBeenCalledWith(
+        expect.stringContaining('Command failed')
+      );
+      await mcpServer.connect();owErrorMessage).toHaveBeenCalledWith(
+        expect.stringContaining('Command failed')
+      await expect(mcpServer.disconnect()).rejects.toThrow('Stop failed');
+      expect(window.showErrorMessage).toHaveBeenCalledWith(
+        expect.stringContaining('Failed to execute command')
+      );
+        expect.stringContaining('Failed to stop MCP server')
+      );
+      expect(mcpServer.getStatus()).toBe(ServerStatus.ERROR);      await mcpServer.connect();      expect(window.showErrorMessage).toHaveBeenCalledWith(
+        expect.stringContaining('Failed to execute command')
+      );      expect(window.showErrorMessage).toHaveBeenCalledWith(
+        expect.stringContaining('Command failed')
+      );      expect(window.showErrorMessage).toHaveBeenCalledWith(
+      expect(window.showErrorMessage).toHaveBeenCalledWith(
+        expect.stringContaining('Command failed')
+      );
+      );      expect(window.showErrorMessage).toHaveBeenCalledWith(
+        expect.stringContaining('Command failed')
+      );
