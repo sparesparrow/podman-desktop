@@ -4,43 +4,32 @@ import { window } from '@podman-desktop/api';
 export class PodmanContainerManager implements ContainerManager {
   private containers: Map<string, Container> = new Map();
 
-  async createContainer(name: string, config: ContainerConfig): Promise<Container> {
-    const container: Container = {
-      id: `mcp-${name}`,
-      name: name,
-      status: 'STARTING',
-      start: async () => {
-        const existingContainer = this.containers.get(name);
-        if (existingContainer) {
-          existingContainer.status = 'RUNNING';
-        }
-      },
-      stop: async () => {
-        const existingContainer = this.containers.get(name);
-        if (existingContainer) {
-          existingContainer.status = 'STOPPED';
-        }
-      },
-      exec: async (command: string) => {
-        return {
-          exitCode: 0,
-          stdout: '',
-          stderr: ''
-        };
-      }
-    };
-
-    this.containers.set(name, container);
-    await container.start();
-    return container;
+  async createContainer(_name: string, _config: unknown): Promise<Container> {
+    // Implementation
+    throw new Error('Not implemented');
   }
 
-  async removeContainer(name: string): Promise<void> {
-    this.containers.delete(name);
+  async removeContainer(_name: string): Promise<void> {
+    // Implementation
+    throw new Error('Not implemented');
+  }
+
+  async exec(_name: string, _command: string): Promise<void> {
+    // Implementation
+    throw new Error('Not implemented');
   }
 
   async listContainers(): Promise<Container[]> {
     return Array.from(this.containers.values());
+  }
+
+  async getContainer(name: string): Promise<Container | undefined> {
+    return this.containers.get(name);
+  }
+
+  async execInContainer(_containerId: string, _command: string): Promise<void> {
+    // Implementation
+    throw new Error('Not implemented');
   }
 
   async startServer(serverName: string): Promise<Container | undefined> {
@@ -86,10 +75,6 @@ export class PodmanContainerManager implements ContainerManager {
       await container.stop();
       this.containers.delete(serverName);
     }
-  }
-
-  getContainer(serverName: string): Container | undefined {
-    return this.containers.get(serverName);
   }
 
   getAllContainers(): Container[] {

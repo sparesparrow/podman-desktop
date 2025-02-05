@@ -1,34 +1,17 @@
-# Use Node.js LTS as the base image
-FROM node:20-slim
+# Use scratch as the base image since the extension is self-contained
+FROM scratch
 
-# Install pnpm
-RUN npm install -g pnpm@8.15.4
+# Copy the necessary files
+COPY package.json ./
+COPY dist/ ./dist
+COPY resources/ ./resources
 
-# Install necessary build dependencies
-RUN apt-get update && apt-get install -y \
-    python3 \
-    make \
-    g++ \
-    && rm -rf /var/lib/apt/lists/*
-
-# Set working directory
-WORKDIR /app
-
-# Copy package files
-COPY package.json pnpm-lock.yaml ./
-
-# Install dependencies
-RUN pnpm install --frozen-lockfile
-
-# Copy source files
-COPY . .
-
-# Build the extension
-RUN pnpm build
-
-# Create the extension package
-RUN pnpm package
-
-# The final package will be in the dist directory
-VOLUME /dist
-CMD ["cp", "-r", "dist/", "/dist/"] 
+# Add metadata labels
+LABEL org.opencontainers.image.title="MCP Server Manager Extension" \
+      org.opencontainers.image.description="MCP Server Manager Extension for Podman Desktop" \
+      org.opencontainers.image.vendor="Podman Desktop" \
+      org.opencontainers.image.version="1.0.0" \
+      org.opencontainers.image.url="https://podman-desktop.io" \
+      org.opencontainers.image.documentation="https://podman-desktop.io/docs/extensions" \
+      org.opencontainers.image.source="https://github.com/containers/podman-desktop" \
+      org.opencontainers.image.licenses="Apache-2.0" 

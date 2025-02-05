@@ -1,15 +1,23 @@
-import { window } from '@podman-desktop/api';
-
 declare module '@podman-desktop/api' {
-  interface Storage {
-    get(key: string): Promise<string | undefined>;
-    set(key: string, value: string): Promise<void>;
-    delete(key: string): Promise<void>;
+  export interface ExtensionContext {
+    subscriptions: { dispose(): void }[];
+    extensionPath: string;
+    storagePath: string;
   }
 
-  interface Window {
-    getStorage(): Storage;
+  export interface Storage {
+    get<T>(key: string): T | undefined;
+    set<T>(key: string, value: T): void;
+    delete(key: string): void;
   }
+
+  export interface Window {
+    showInformationMessage(message: string): Promise<void>;
+    showErrorMessage(message: string): Promise<void>;
+  }
+
+  export const window: Window;
+  export const storage: Storage;
 }
 
 // Augment the window object

@@ -1,23 +1,31 @@
 {
   "extends": "@tsconfig/svelte/tsconfig.json",
   "compilerOptions": {
-    "outDir": "dist",
-    "rootDir": "src",
     "target": "ES2020",
-    "module": "ES2020",
-    "moduleResolution": "node",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "isolatedModules": true,
+    "types": ["node", "svelte"],
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "lib": ["ES2020", "DOM"],
+    "resolveJsonModule": true,
+    "allowJs": true,
+    "checkJs": true,
     "baseUrl": ".",
     "paths": {
-      "@podman-desktop/api": ["../../packages/extension-api/src/api"],
-      "@modelcontextprotocol/sdk": ["../../packages/modelcontextprotocol-sdk/src/sdk"],
-      "@anthropic-ai/sdk": ["../../packages/anthropic-sdk/src/sdk"]
+      "@/*": ["src/*"]
     }
   },
-  "include": ["src/**/*", "src/**/*.svelte"],
-  "exclude": ["src/**/__tests__/**/*"]
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "src/**/*.svelte",
+    "src/**/*.d.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
 }

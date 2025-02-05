@@ -2,6 +2,39 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "name": "Debug MCP Server",
+      "type": "node",
+      "request": "launch",
+      "skipFiles": ["<node_internals>/**"],
+      "program": "${workspaceFolder}/extensions/mcp/src/extension.ts",
+      "outFiles": ["${workspaceFolder}/extensions/mcp/dist/**/*.js"],
+      "args": [],
+      "env": {
+        "NODE_ENV": "development",
+        "MCP_DEBUG": "true"
+      },
+      "sourceMaps": true,
+      "preLaunchTask": "npm: build:mcp",
+      "autoAttachChildProcesses": true,
+      "resolveSourceMapLocations": [
+        "${workspaceFolder}/extensions/mcp/**",
+        "!**/node_modules/**"
+      ]
+    },
+    {
+      "name": "Launch via NPM",
+      "request": "launch",
+      "runtimeArgs": [
+        "run-script",
+        "debug"
+      ],
+      "runtimeExecutable": "npm",
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "type": "node"
+    },
+    {
       "type": "node",
       "request": "launch",
       "name": "Debug Main Process",

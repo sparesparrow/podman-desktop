@@ -1,4 +1,4 @@
-import type { IMcpServer, ServerConfig, ServerCapabilities, Container } from '../types/interfaces';
+import type { IMcpServer, ServerConfig, ServerCapabilities, Container, ServerOptions } from '../types/interfaces';
 import { ServerStatus } from '../types/interfaces';
 import type { ContainerManager } from '../types/interfaces';
 import { window } from '@podman-desktop/api';
@@ -7,12 +7,16 @@ export class McpServer implements IMcpServer {
   private status: ServerStatus = ServerStatus.STOPPED;
   private container?: Container;
   private capabilities?: ServerCapabilities;
+  private isRunning: boolean = false;
+  private config: ServerConfig;
 
   constructor(
     private readonly name: string,
-    private readonly config: ServerConfig,
+    config: ServerConfig,
     private readonly containerManager: ContainerManager
-  ) {}
+  ) {
+    this.config = config;
+  }
 
   async connect(options?: object): Promise<void> {
     try {
@@ -87,5 +91,31 @@ export class McpServer implements IMcpServer {
 
   getConfig(): ServerConfig {
     return this.config;
+  }
+
+  async start(): Promise<void> {
+    if (this.isRunning) {
+      return;
+    }
+    this.isRunning = true;
+  }
+
+  async stop(): Promise<void> {
+    if (!this.isRunning) {
+      return;
+    }
+    this.isRunning = false;
+  }
+
+  isActive(): boolean {
+    return this.isRunning;
+  }
+
+  getContainer(): Container | undefined {
+    return this.container;
+  }
+
+  setContainer(container: Container): void {
+    this.container = container;
   }
 } 

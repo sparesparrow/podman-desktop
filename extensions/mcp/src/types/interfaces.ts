@@ -1,4 +1,5 @@
 import type { Transport } from '@modelcontextprotocol/sdk';
+import type { ProviderStatus } from '@podman-desktop/api';
 
 // Core interfaces
 export interface IMcpConfig {
@@ -22,7 +23,6 @@ export interface ILLMProvider {
 
 // Server and Container types
 export interface ServerConfig {
-  name: string;
   command: string;
   args: string[];
   env?: Record<string, string>;
@@ -31,27 +31,34 @@ export interface ServerConfig {
   tools?: ToolConfig[];
 }
 
-export enum ServerStatus {
-  STARTING = 'STARTING',
-  RUNNING = 'RUNNING',
-  STOPPING = 'STOPPING',
-  STOPPED = 'STOPPED',
-  ERROR = 'ERROR'
+export interface ServerOptions {
+  capabilities?: string[];
+  env?: Record<string, string>;
 }
 
 export interface ServerCapabilities {
-  supportedTools: string[];
-  maxConcurrentRequests: number;
-  supportedTransports: string[];
+  resources?: {
+    subscribe?: boolean;
+    listChanged?: boolean;
+  };
+  prompts?: {
+    listChanged?: boolean;
+  };
+  tools?: {
+    listChanged?: boolean;
+  };
+  logging?: Record<string, unknown>;
 }
+
+export type ServerStatus = 'STARTING' | 'RUNNING' | 'STOPPING' | 'STOPPED' | 'ERROR';
 
 export interface Container {
   id: string;
   name: string;
-  status: ServerStatus;
+  status: ProviderStatus;
   start(): Promise<void>;
   stop(): Promise<void>;
-  exec(command: string): Promise<ExecResult>;
+  exec(command: string): Promise<{ stdout: string; stderr: string }>;
 }
 
 export interface ContainerManager {
@@ -67,9 +74,11 @@ export interface McpRequest {
 }
 
 export interface McpResponse {
-  status: 'success' | 'error';
-  data: Record<string, unknown>;
-  error?: string;
+  result: string;
+  metadata?: {
+    timestamp: string;
+    version: string;
+  };
 }
 
 export interface LLMRequest {
@@ -89,15 +98,20 @@ export interface LLMResponse {
 
 // Configuration types
 export interface ResourceConfig {
+  name: string;
   type: string;
-  path: string;
-  options?: Record<string, unknown>;
+  config: Record<string, unknown>;
 }
 
 export interface ToolConfig {
   name: string;
   description: string;
-  parameters: Record<string, unknown>;
+  args: {
+    name: string;
+    type: string;
+    description: string;
+    required: boolean;
+  }[];
 }
 
 export interface ContainerConfig {
@@ -112,4 +126,39 @@ export interface ExecResult {
   exitCode: number;
   stdout: string;
   stderr: string;
+}
+
+export interface ServerInfo {
+  name: string;
+  status: ServerStatus;
+  capabilities: ServerCapabilities;
+  version: string;
+}
+
+export interface IMcpServer {
+  getName(): string;
+  getConfig(): ServerConfig;
+  start(): Promise<void>;
+  stop(): Promise<void>;
+  isActive(): boolean;
+  getStatus(): ServerStatus;
+  getContainer(): Container | undefined;
+  setContainer(container: Container): void;
+}
+
+export interface IMcpProvider {
+  name: string;
+  id: string;
+  status: ProviderStatus;
+  initialize(): Promise<void>;
+  start(): Promise<void>;
+  stop(): Promise<void>;
+  getStatus(): Promise<ProviderStatus>;
+}
+
+export interface IMcpServerManager {
+  startServer(name: string, config: ServerConfig): Promise<Container>;
+  stopServer(name: string): Promise<void>;
+  listServers(): Promise<ServerInfo[]>;
+  getServerStatus(name: string): Promise<ServerStatus>;
 }

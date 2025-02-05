@@ -1,0 +1,63 @@
+name: Build MCP Server Manager Extension
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'extensions/mcp/**'
+  pull_request:
+    paths:
+      - 'extensions/mcp/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8.15.4
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: extensions/mcp
+
+      - name: Run tests
+        run: pnpm test
+        working-directory: extensions/mcp
+
+      - name: Build extension
+        run: pnpm build
+        working-directory: extensions/mcp
+
+      - name: Set up Buildah Build environment
+        uses: redhat-actions/buildah-build@v2
+        with:
+          containerfiles: |
+            ./extensions/mcp/Dockerfile
+          image: mcp-server-manager-extension
+          tags: |
+            latest
+            1.0.0
+          context: ./extensions/mcp
+
+      - name: Push to Quay.io
+        if: github.ref == 'refs/heads/main'
+        uses: redhat-actions/push-to-registry@v2
+        with:
+          image: mcp-server-manager-extension
+          tags: |
+            latest
+            1.0.0
+          registry: quay.io/podman-desktop
+          username: ${{ secrets.QUAY_USERNAME }}
+          password: ${{ secrets.QUAY_PASSWORD }} 

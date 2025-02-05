@@ -3,12 +3,9 @@ import type { Transport } from '@modelcontextprotocol/sdk';
 import { Client } from '@modelcontextprotocol/sdk';
 import { window } from '@podman-desktop/api';
 
-interface McpResponse {
-  result: string;
-  metadata?: {
-    timestamp: string;
-    version: string;
-  };
+export interface McpClient {
+  processMessage(message: string): Promise<McpResponse>;
+  sendRequest<T>(request: unknown): Promise<T>;
 }
 
 export class McpClient implements IMcpClient {
@@ -43,7 +40,7 @@ export class McpClient implements IMcpClient {
     }
   }
 
-  async processMessage(message: string): Promise<string> {
+  async processMessage(message: string): Promise<McpResponse> {
     try {
       const response = await this.sendRequest({
         type: 'process_message',
@@ -55,19 +52,12 @@ export class McpClient implements IMcpClient {
     }
   }
 
-  async sendRequest(request: McpRequest): Promise<McpResponse> {
+  async sendRequest<T>(request: unknown): Promise<T> {
     try {
       const response = await this.client.request(request);
-      return {
-        status: 'success',
-        data: response as Record<string, unknown>
-      };
+      return response as T;
     } catch (error) {
-      return {
-        status: 'error',
-        data: {},
-        error: error instanceof Error ? error.message : String(error)
-      };
+      throw new Error(`Failed to send request: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
