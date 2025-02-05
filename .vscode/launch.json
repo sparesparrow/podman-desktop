@@ -16,22 +16,14 @@
       "sourceMaps": true,
       "preLaunchTask": "npm: build:mcp",
       "autoAttachChildProcesses": true,
-      "resolveSourceMapLocations": [
-        "${workspaceFolder}/extensions/mcp/**",
-        "!**/node_modules/**"
-      ]
+      "resolveSourceMapLocations": ["${workspaceFolder}/extensions/mcp/**", "!**/node_modules/**"]
     },
     {
       "name": "Launch via NPM",
       "request": "launch",
-      "runtimeArgs": [
-        "run-script",
-        "debug"
-      ],
+      "runtimeArgs": ["run-script", "debug"],
       "runtimeExecutable": "npm",
-      "skipFiles": [
-        "<node_internals>/**"
-      ],
+      "skipFiles": ["<node_internals>/**"],
       "type": "node"
     },
     {
