@@ -946,7 +946,7 @@ importers:
         version: 4.0.0
       docusaurus-plugin-typedoc:
         specifier: ^1.2.3
-        version: 1.2.3(typedoc-plugin-markdown@4.4.1(typedoc@0.27.6(typescript@5.6.3)))
+        version: 1.2.3(typedoc-plugin-markdown@4.5.1(typedoc@0.27.6(typescript@5.6.3)))
       prism-react-renderer:
         specifier: ^2.4.1
         version: 2.4.1(react@18.2.0)
@@ -991,8 +991,8 @@ importers:
         specifier: ^0.27.6
         version: 0.27.6(typescript@5.6.3)
       typedoc-plugin-markdown:
-        specifier: ^4.4.1
-        version: 4.4.1(typedoc@0.27.6(typescript@5.6.3))
+        specifier: ^4.5.1
+        version: 4.5.1(typedoc@0.27.6(typescript@5.6.3))
       typescript:
         specifier: ^5.6.3
         version: 5.6.3
@@ -1725,6 +1725,10 @@ packages:
 
   '@babel/runtime@7.26.0':
     resolution: {integrity: sha512-FDSOghenHTiToteC/QRlv2q3DhPZ/oOXTBoirfWNx1Cx3TMVcGWQtMMmQcSvb/JjpNeGzx8Pq/b4fKEJuWm1sw==}
+    engines: {node: '>=6.9.0'}
+
+  '@babel/runtime@7.26.10':
+    resolution: {integrity: sha512-2WJMeRQPHKSPemqk/awGrAiuFfzBmOIPXKizAsVhWH9YJqLZ0H+HS4c8loHGgW6utJ3E/ejXQUsiGaQy2NZ9Fw==}
     engines: {node: '>=6.9.0'}
 
   '@babel/runtime@7.26.7':
@@ -10881,11 +10885,11 @@ packages:
   typedarray-to-buffer@3.1.5:
     resolution: {integrity: sha512-zdu8XMNEDepKKR+XYOXAVPtWui0ly0NtohUscw+UmaHiAWT8hrV1rr//H6V+0DvJ3OQ19S979M0laLfX8rm82Q==}
 
-  typedoc-plugin-markdown@4.4.1:
-    resolution: {integrity: sha512-fx23nSCvewI9IR8lzIYtzDphETcgTDuxKcmHKGD4lo36oexC+B1k4NaCOY58Snqb4OlE8OXDAGVcQXYYuLRCNw==}
+  typedoc-plugin-markdown@4.5.1:
+    resolution: {integrity: sha512-W1M6sjjVNITSOT5bjJvy8EUL/Q9v7bqSPu5k+7M/a8eXAxUFubb7SbN4Q7ATAqE4GxZ0bbSK1RfLNNSmjE+v2A==}
     engines: {node: '>= 18'}
     peerDependencies:
-      typedoc: 0.27.x
+      typedoc: 0.28.x
 
   typedoc@0.27.6:
     resolution: {integrity: sha512-oBFRoh2Px6jFx366db0lLlihcalq/JzyCVp7Vaq1yphL/tbgx2e+bkpkCgJPunaPvPwoTOXSwasfklWHm7GfAw==}
@@ -12436,6 +12440,10 @@ snapshots:
       regenerator-runtime: 0.14.1
 
   '@babel/runtime@7.26.0':
+    dependencies:
+      regenerator-runtime: 0.14.1
+
+  '@babel/runtime@7.26.10':
     dependencies:
       regenerator-runtime: 0.14.1
 
@@ -14780,7 +14788,7 @@ snapshots:
 
   '@slorber/react-helmet-async@1.3.0(react-dom@18.3.1(react@18.2.0))(react@18.2.0)':
     dependencies:
-      '@babel/runtime': 7.26.7
+      '@babel/runtime': 7.26.10
       invariant: 2.2.4
       prop-types: 15.8.1
       react: 18.2.0
@@ -17760,9 +17768,9 @@ snapshots:
 
   docusaurus-plugin-goatcounter@4.0.0: {}
 
-  docusaurus-plugin-typedoc@1.2.3(typedoc-plugin-markdown@4.4.1(typedoc@0.27.6(typescript@5.6.3))):
+  docusaurus-plugin-typedoc@1.2.3(typedoc-plugin-markdown@4.5.1(typedoc@0.27.6(typescript@5.6.3))):
     dependencies:
-      typedoc-plugin-markdown: 4.4.1(typedoc@0.27.6(typescript@5.6.3))
+      typedoc-plugin-markdown: 4.5.1(typedoc@0.27.6(typescript@5.6.3))
 
   dom-accessibility-api@0.5.16: {}
 
@@ -19300,7 +19308,7 @@ snapshots:
 
   history@4.10.1:
     dependencies:
-      '@babel/runtime': 7.26.0
+      '@babel/runtime': 7.26.10
       loose-envify: 1.4.0
       resolve-pathname: 3.0.0
       tiny-invariant: 1.3.3
@@ -22547,7 +22555,7 @@ snapshots:
 
   regenerator-transform@0.15.2:
     dependencies:
-      '@babel/runtime': 7.26.7
+      '@babel/runtime': 7.26.10
 
   regexp-ast-analysis@0.7.1:
     dependencies:
@@ -23834,7 +23842,7 @@ snapshots:
     dependencies:
       is-typedarray: 1.0.0
 
-  typedoc-plugin-markdown@4.4.1(typedoc@0.27.6(typescript@5.6.3)):
+  typedoc-plugin-markdown@4.5.1(typedoc@0.27.6(typescript@5.6.3)):
     dependencies:
       typedoc: 0.27.6(typescript@5.6.3)
 
