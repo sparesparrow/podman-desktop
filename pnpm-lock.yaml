@@ -43,8 +43,8 @@ importers:
         specifier: ^3.4.0
         version: 3.4.0
       chokidar:
-        specifier: ^3.6.0
-        version: 3.6.0
+        specifier: ^4.0.3
+        version: 4.0.3
       compare-versions:
         specifier: ^6.1.1
         version: 6.1.1
@@ -19300,7 +19300,7 @@ snapshots:
 
   history@4.10.1:
     dependencies:
-      '@babel/runtime': 7.26.0
+      '@babel/runtime': 7.26.7
       loose-envify: 1.4.0
       resolve-pathname: 3.0.0
       tiny-invariant: 1.3.3
